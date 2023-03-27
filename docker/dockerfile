@@ -1,0 +1,32 @@
+FROM ubuntu:20.04
+
+RUN apt-get update && apt-get upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 curl software-properties-common unzip
+RUN add-apt-repository ppa:ondrej/php
+RUN apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 php7.4 php7.4-mysql php7.4-mbstring php7.4-xml php7.4-mongodb php7.4-mbstring php7.4-xml php7.4-zip php7.4-curl php7.4-gd php7.4-imagick git
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+
+COPY vhost.conf /etc/apache2/sites-available/000-default.conf
+
+RUN echo 'application/wasm wasm' >> /etc/mime.types
+
+RUN sed -E -i -e 's/post_max_size = 8M/post_max_size = 20M/' /etc/php/7.4/apache2/php.ini \
+ && sed -E -i -e 's/upload_max_filesize = 2M/upload_max_filesize = 20M/' /etc/php/7.4/apache2/php.ini
+
+
+RUN a2enmod rewrite
+EXPOSE 80
+
+## Add the wait script to the image
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.7.3/wait /wait
+RUN chmod +x /wait
+
+RUN groupmod -g 1000 root
+RUN adduser --disabled-password --gecos '' --uid 1000 --gid 1000 user
+RUN chown user:root /var/log/apache2 -R
+RUN chown user:root /var/run/apache2 -R
+USER user
+
+CMD /wait && composer install && apachectl -D FOREGROUND
