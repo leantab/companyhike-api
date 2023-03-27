@@ -171,6 +171,15 @@ class Game extends Component
         }
     }
 
+    public function processRandom(){
+        $res = Sherpa::processNextStepTest($this->matchId);
+        if ($res) {
+            session()->flash('message', 'Turno procesado');
+        } else {
+            session()->flash('message', 'ERROR');
+        }
+    }
+
     public function clearSearch(){
         $this->search = '';
     }
